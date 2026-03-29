@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>SW LCG: Terminal de Operaciones</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap');
+
+        :root {
+            --gold: #ffe81f;
+            --blue: #2e67f8;
+            --red: #ff0000;
+            --bg: #0a0a0a;
+            --panel: #1a1d23;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: #ccc;
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+/* align-items: center;  <-- ELIMINA O COMENTA ESTA LÍNEA */
+            min-height: 100vh;
+overflow-y: auto; /* <-- CAMBIA A AUTO */
+padding: 40px 0; /* Añade un poco de aire arriba y abajo */
+            background-image: radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 40px),
+                              radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 30px);
+            background-size: 550px 550px, 350px 350px;
+        }
+
+#game-terminal {
+    width: 90%;
+    max-width: 800px;
+    background: var(--panel);
+    border: 2px solid #333;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.8);
+    padding: 30px;
+    position: relative;
+    margin: auto; /* Esto lo mantendrá centrado horizontalmente */
+}
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--gold);
+            text-align: center;
+            text-transform: uppercase;
+            font-size: 1.5rem;
+            margin-top: 0;
+            border-bottom: 1px solid #444;
+            padding-bottom: 15px;
+        }
+
+        .phase-content {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .phase-content.active { display: block; }
+
+        .phase-title {
+            color: var(--blue);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .phase-title::before {
+            content: "▶";
+            margin-right: 10px;
+            font-size: 0.8rem;
+        }
+
+        .instruction-box {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 3px solid var(--gold);
+            margin-bottom: 15px;
+        }
+
+        .solo-rule {
+            border-left: 3px solid #00ff00;
+            background: rgba(0, 255, 0, 0.05);
+            font-style: italic;
+        }
+
+        ul { padding-left: 20px; }
+        li { margin-bottom: 8px; }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 25px;
+        }
+
+        button {
+            background: transparent;
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+
+        button:hover {
+            background: var(--gold);
+            color: black;
+            box-shadow: 0 0 10px var(--gold);
+        }
+
+        button:disabled {
+            border-color: #444;
+            color: #444;
+            cursor: not-allowed;
+        }
+
+        #music-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        b { color: var(--gold); }
+    </style>
+</head>
+<body>
+
+<button id="music-toggle" onclick="toggleMusic()">🎵</button>
+<audio id="audio-player" loop>
+    <source src="starwars.mp3" type="audio/mpeg">
+</audio>
+<audio id="sfx-laser">
+    <source src="laser.mp3" type="audio/mpeg">
+</audio>
+
+<div id="game-terminal">
+    <h1>Data-Pad: Secuencia de Turno</h1>
+
+    <div class="phase-content active" id="p1">
+        <div class="phase-title">Fase 1: Equilibrio de la Fuerza</div>
+        <div class="instruction-box">
+            <ul>
+                <li>Si eres el <b>Lado Oscuro</b>: Avanza el dial de la Estrella de la Muerte 1 punto automáticamente.</li>
+                <li>Comprueba el <b>Marcador de la Fuerza</b>:
+                    <ul>
+                        <li>Si está en el Lado Oscuro: El dial avanza 1 punto extra.</li>
+                        <li>Si está en el Lado Luminoso: El LS puede hacer 1 punto de daño a un objetivo enemigo.</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+        <div class="instruction-box solo-rule">
+            <b>Regla Solitario:</b> Si juegas contra la IA, ella siempre prioriza inclinar la fuerza. Si el dial llega a 12, pierdes inmediatamente.
+        </div>
+    </div>
+
+    <div class="phase-content" id="p2">
+        <div class="phase-title">Fase 2: Refresco (Refresh)</div>
+        <div class="instruction-box">
+            <ul>
+                <li><b>Quitar Foco:</b> Retira 1 ficha de foco de CADA carta (unidades, objetivos y recursos). Si una carta tiene 2 focos, se queda con 1.</li>
+                <li><b>Escudos:</b> Retira todos los escudos de tus unidades y objetivos.</li>
+                <li><b>Nuevos Objetivos:</b> Si tienes menos de 3 objetivos en juego, revela cartas del mazo de objetivos hasta tener 3.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="phase-content" id="p3">
+        <div class="phase-title">Fase 3: Robo (Draw)</div>
+        <div class="instruction-box">
+            <ul>
+                <li><b>Descarte opcional:</b> Puedes elegir una carta de tu mano y descartarla.</li>
+                <li><b>Reponer mano:</b> Roba cartas hasta alcanzar tu límite de reserva (indicado en tu carta de afiliación, normalmente <b>6</b>).</li>
+                <li><i>Si tu mano ya supera el límite, debes descartar hasta igualarlo.</i></li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="phase-content" id="p4">
+        <div class="phase-title">Fase 4: Despliegue (Deployment)</div>
+        <div class="instruction-box">
+            <ul>
+                <li><b>Generar Recursos:</b> Enfoca (pon foco) tus cartas de recursos o de objetivo para obtener créditos.</li>
+                <li><b>Bajar Cartas:</b> Paga el coste de las unidades o mejoras de tu mano.</li>
+                <li><b>Restricción:</b> Debes poder pagar el "Coste de Facción" (tener al menos un recurso de la misma facción que la carta que juegas).</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="phase-content" id="p5">
+        <div class="phase-title">Fase 5: Conflicto (Combate)</div>
+        <div class="instruction-box">
+            <b>1. Declaración:</b> Designa un objetivo enemigo y agota las unidades que atacan.
+        </div>
+        <div class="instruction-box">
+            <b>2. Duelo de Ventaja:</b> Poned cartas boca abajo. Sumad iconos de fuerza.
+            <ul>
+                <li>El ganador ataca primero y activa iconos blancos (especiales).</li>
+                <li>Se resuelven primero las cartas de <b>Destino (Fate)</b>.</li>
+            </ul>
+        </div>
+        <div class="instruction-box">
+            <b>3. Daño:</b> Aplica iconos: 
+            <li><b>Bláster:</b> Daño a unidad.</li>
+            <li><b>Explosión:</b> Daño a objetivo.</li>
+            <li><b>Táctica:</b> Enfocar unidad enemiga.</li>
+        </div>
+        <div class="instruction-box solo-rule">
+            <b>IA en Solitario:</b> La IA defiende siempre que tenga una unidad lista capaz de sobrevivir o matar a un atacante.
+        </div>
+    </div>
+
+    <div class="phase-content" id="p6">
+        <div class="phase-title">Fase 6: La Fuerza</div>
+        <div class="instruction-box">
+            <ul>
+                <li>Puedes elegir hasta 3 unidades listas y <b>comprometerlas con la fuerza</b> (ponles una carta de Fuerza encima).</li>
+                <li>Suma los iconos de fuerza de todas tus unidades comprometidas.</li>
+                <li>Si tu total es mayor que el del oponente, el marcador de Equilibrio se mueve hacia tu lado.</li>
+            </ul>
+        </div>
+        <div class="instruction-box solo-rule">
+            <b>Final del turno:</b> Pasa el control al oponente.
+        </div>
+    </div>
+
+    <div class="controls">
+<button id="prevBtn" onclick="playLaser(); changePhase(-1)" disabled>Anterior</button>
+<button id="nextBtn" onclick="playLaser(); changePhase(1)">Siguiente Fase</button>
+    </div>
+</div>
+
+<script>
+function playLaser() {
+    const laser = document.getElementById('sfx-laser');
+    laser.currentTime = 0; // Reinicia el sonido por si pulsas rápido
+    laser.play();
+}
+    let currentPhase = 1;
+    const totalPhases = 6;
+    const music = document.getElementById('audio-player');
+
+    function changePhase(step) {
+        document.getElementById(`p${currentPhase}`).classList.remove('active');
+        currentPhase += step;
+        
+        if (currentPhase > totalPhases) currentPhase = 1;
+        if (currentPhase < 1) currentPhase = totalPhases;
+
+        document.getElementById(`p${currentPhase}`).classList.add('active');
+        
+        document.getElementById('prevBtn').disabled = (currentPhase === 1);
+        document.getElementById('nextBtn').innerText = (currentPhase === totalPhases) ? "Reiniciar Turno" : "Siguiente Fase";
+    }
+
+    function toggleMusic() {
+        if (music.paused) {
+            music.play();
+            document.getElementById('music-toggle').style.boxShadow = "0 0 15px var(--blue)";
+        } else {
+            music.pause();
+            document.getElementById('music-toggle').style.boxShadow = "none";
+        }
+    }
+</script>
+
+</body>
+</html>
